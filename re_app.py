@@ -1,8 +1,12 @@
+from typing import final
 import streamlit as st
 import pandas as pd
 import glob
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pydeck as pdk
+
+# DATA IMPORT
 
 # utility to drop columns across all data from this source
 def drop_columns (df):
@@ -38,7 +42,7 @@ def load_final():
     for_sale['UPDATED'] = pd.to_datetime(for_sale['UPDATED'])
 
     # Clean up the updated field on reduced listings
-    reduced['UPDATED'] = reduced['UPDATED'].str.slice(start=7, stop=17)
+    reduced['UPDATED'] = reduced['UPDATED'].str.slice(start=8, stop=18)
     reduced['UPDATED'] = pd.to_datetime(reduced['UPDATED'])
 
     # Combine for sale and reduced listings so we can get the latest asking price for comparison
@@ -56,5 +60,60 @@ def load_final():
 
     return final
 
+# SUMMARY STATS
+# calculate mean amount over asking price
+def m_over(df):
+    m = df["DIFF"].loc[df['DIFF'] > 0].mean()
+    return m
+
+# calculate % of properties that went over asking price
+def p_over(df):
+    p = (df["DIFF"].loc[df['DIFF'] > 0].count() / df["DIFF"].count())*100
+    return p
+
+# calculate % of properties that went over asking price
+def p_under(df):
+    p = (df["DIFF"].loc[df['DIFF'] < 0].count() / df["DIFF"].count())*100
+    return p
+
+
 data = load_final()
+map_data = data[["LATITUDE", "LONGITUDE", "DIFF", "ASKING PRICE", "SALE PRICE"]]
+
+# APP
+
+# display summary stats
+st.metric("Average amount over asking price", '${:.0f}'.format(m_over(data)))
+st.metric("Percent of properties over asking price", "{:.2f}%".format(p_over(data)))
+st.metric("Percent of properties under asking price", "{:.2f}%".format(p_under(data)))
+
+# view = pdk.data_utils.compute_view(final[["LONGITUDE", "LATITUDE"]])
+
+col_layer = pdk.Layer(
+        "ColumnLayer",
+        map_data,
+        get_position=["LONGITUDE", "LATITUDE"],
+        get_elevation=["DIFF"],
+        elevation_scale=.01,
+        radius=100,
+        elevation_range=[0, 1000],
+        pickable=True,
+        auto_highlight=True,
+        extruded=True,
+)
+
+st.pydeck_chart(pdk.Deck(
+    col_layer,
+    tooltip=True,
+    # initial_view_state = view,
+    initial_view_state = {
+                "latitude": 47.6161,
+                "longitude": -122.3964,
+                "zoom": 10,
+                "pitch": 40,
+    },
+    map_provider = "mapbox",
+    map_style = 'mapbox://styles/mapbox/light-v9',
+))
+
 data
