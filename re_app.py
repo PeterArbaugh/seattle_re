@@ -13,6 +13,11 @@ def drop_columns (df):
     df.drop(['index', 'NEXT OPEN HOUSE START TIME', 'NEXT OPEN HOUSE END TIME', 'SOURCE', 'FAVORITE', 'INTERESTED'], axis=1, inplace=True)
     return df
 
+# utility to take a row and reformat to display , for thousands
+def show_thous(series):
+    series.apply(lambda d: f"{d:,}")
+    return series
+
 # import listings from daily CSVs and concatenate to a single df
 def import_listings(files):
     all_files = []
@@ -55,7 +60,7 @@ def load_final():
 
     # Join sold and for sale listings
     final = pd.merge(final, sold[['SOLD DATE', 'PRICE', 'MLS#']], how='inner', on='MLS#')
-    final = final.rename(columns={"PRICE_x": "ASKING PRICE", "PRICE_y": "SALE PRICE"})
+    final = final.rename(columns={"PRICE_x": "ASKING PRICE", "PRICE_y": "SALE PRICE", "URL (SEE https://www.redfin.com/buy-a-home/comparative-market-analysis FOR INFO ON PRICING)": "URL"})
     final['DIFF'] = final["SALE PRICE"] - final['ASKING PRICE']
 
     return final
@@ -78,8 +83,14 @@ def p_under(df):
 
 
 data = load_final()
+
+# Format data for map vizualization
 map_data = data[["LATITUDE", "LONGITUDE", "DIFF", "ASKING PRICE", "SALE PRICE"]]
 map_data = map_data.rename(columns={"ASKING PRICE": "ASKING_PRICE", "SALE PRICE": "SALE_PRICE"})
+# map_data["F_DIFF"] = show_thous(map_data["DIFF"])
+map_data["F_DIFF"] = map_data["DIFF"].apply(lambda d: f"{d:,}")
+map_data["F_ASKING_PRICE"] = map_data["ASKING_PRICE"].apply(lambda d: f"{d:,}")
+map_data["F_SALE_PRICE"] = map_data["SALE_PRICE"].apply(lambda d: f"{d:,}")
 
 # APP
 
@@ -90,22 +101,37 @@ st.metric("Percent of properties under asking price", "{:.2f}%".format(p_under(d
 
 # view = pdk.data_utils.compute_view(final[["LONGITUDE", "LATITUDE"]])
 
+option = st.selectbox(
+     'Select a field to display on the map',
+     ('Asking Price', 'Sale Price', 'Price difference (over/under asking)'),
+     index=2
+     )
+
+map_display_lookup = {
+    "Asking Price": "ASKING_PRICE",
+    "Sale Price": "SALE_PRICE",
+    "Price difference (over/under asking)": "DIFF"
+}
+
+elevation = map_display_lookup[option]
+
 col_layer = pdk.Layer(
         "ColumnLayer",
         map_data,
         get_position=["LONGITUDE", "LATITUDE"],
-        get_elevation=["DIFF"],
+        get_elevation=[elevation],
         elevation_scale=.01,
         radius=100,
         elevation_range=[0, 1000],
         pickable=True,
         auto_highlight=True,
         extruded=True,
+        get_fill_color=[255, 75, 75]
 )
 
 tooltip = {
-    "html": "Asking Price: <b>${ASKING_PRICE}</b><br/>Sale Price: <b>${SALE_PRICE}</b>",
-    "style": {"background": "grey", "color": "white", "font-family": '"Helvetica Neue", Arial', "z-index": "10000"},
+    "html": "<b>Asking Price:</b> ${F_ASKING_PRICE}<br/><b>Sale Price:</b> ${F_SALE_PRICE}<br/><b>Difference:</b> ${F_DIFF}",
+    "style": {"background": "black", "color": "white", "font-family": '"Source Sans Pro", sans-serif', "z-index": "10000"},
 }
 
 st.pydeck_chart(pdk.Deck(
