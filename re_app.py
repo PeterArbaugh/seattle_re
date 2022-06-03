@@ -79,6 +79,7 @@ def p_under(df):
 
 data = load_final()
 map_data = data[["LATITUDE", "LONGITUDE", "DIFF", "ASKING PRICE", "SALE PRICE"]]
+map_data = map_data.rename(columns={"ASKING PRICE": "ASKING_PRICE", "SALE PRICE": "SALE_PRICE"})
 
 # APP
 
@@ -102,9 +103,14 @@ col_layer = pdk.Layer(
         extruded=True,
 )
 
+tooltip = {
+    "html": "Asking Price: <b>${ASKING_PRICE}</b><br/>Sale Price: <b>${SALE_PRICE}</b>",
+    "style": {"background": "grey", "color": "white", "font-family": '"Helvetica Neue", Arial', "z-index": "10000"},
+}
+
 st.pydeck_chart(pdk.Deck(
     col_layer,
-    tooltip=True,
+    tooltip=tooltip,
     # initial_view_state = view,
     initial_view_state = {
                 "latitude": 47.6161,
