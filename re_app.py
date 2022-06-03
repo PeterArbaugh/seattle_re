@@ -93,7 +93,20 @@ map_data["F_ASKING_PRICE"] = map_data["ASKING_PRICE"].apply(lambda d: f"{d:,}")
 map_data["F_SALE_PRICE"] = map_data["SALE_PRICE"].apply(lambda d: f"{d:,}")
 
 # APP
-
+# filters
+# price range
+p_range = st.slider('Select a price range', value=[300000, 1000000])
+# city
+city = st.multiselect('City', ['Option 1', 'Option 2'])
+# neighborhood
+neighborhood = st.multiselect('Neighborhood', ['Option 1', 'Option 2'])
+# sq ft
+sqft = st.slider('Sq. Feet', value=[500, 4000])
+# bed/bath
+beds = st.slider('Beds', value=[1, 5])
+baths = st.slider('Baths', value=[1, 5])
+# property type
+property_type = st.multiselect('Property type', ['Option 1', 'Option 2'])
 # display summary stats
 st.metric("Average amount over asking price", '${:.0f}'.format(m_over(data)))
 st.metric("Percent of properties over asking price", "{:.2f}%".format(p_over(data)))
