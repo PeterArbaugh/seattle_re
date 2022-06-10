@@ -87,25 +87,12 @@ def p_under(df):
 
 data = load_final()
 
-# Format data for map vizualization
-# map_data = data[["LATITUDE", "LONGITUDE", "DIFF", "ASKING PRICE", "SALE PRICE", "SOLD DATE"]]
-# map_data = map_data.rename(columns={"ASKING PRICE": "ASKING_PRICE", "SALE PRICE": "SALE_PRICE", "SOLD DATE": "SOLD_DATE"})
-# # map_data["F_DIFF"] = show_thous(map_data["DIFF"])
-# map_data["F_DIFF"] = map_data["DIFF"].apply(lambda d: f"{d:,}")
-# map_data["F_ASKING_PRICE"] = map_data["ASKING_PRICE"].apply(lambda d: f"{d:,}")
-# map_data["F_SALE_PRICE"] = map_data["SALE_PRICE"].apply(lambda d: f"{d:,}")
-
-data = data.rename(columns={"ASKING PRICE": "ASKING_PRICE", "SALE PRICE": "SALE_PRICE", "SOLD DATE": "SOLD_DATE"})
-data["F_DIFF"] = data["DIFF"].apply(lambda d: f"{d:,}")
-data["F_ASKING_PRICE"] = data["ASKING_PRICE"].apply(lambda d: f"{d:,}")
-data["F_SALE_PRICE"] = data["SALE_PRICE"].apply(lambda d: f"{d:,}")
-
 # Calculate variables to populate filter inputs
-min_asking = int(data["ASKING_PRICE"].min())
-max_asking = int(data["ASKING_PRICE"].max())
+min_asking = int(data["ASKING PRICE"].min())
+max_asking = int(data["ASKING PRICE"].max())
 
-min_date = datetime.date(data["SOLD_DATE"].min())
-max_date = datetime.date(data["SOLD_DATE"].max())
+min_date = datetime.date(data["SOLD DATE"].min())
+max_date = datetime.date(data["SOLD DATE"].max())
 
 cities = data["CITY"].drop_duplicates(keep='first')
 
@@ -144,55 +131,98 @@ with st.sidebar:
         format="MM/DD/YY"
         )
     
-    # city
-    city = st.multiselect(
-        'City', 
-        cities)
-    
-    # neighborhood
-    neighborhood = st.multiselect(
-        'Neighborhood', 
-        hoods)
-    
-    # sq ft
-    sqft = st.slider(
-        'Sq. Feet', 
-        min_value = min_sf,
-        max_value = max_sf,
-        value=[min_sf, max_sf]
-        )
-    
-    # bed/bath
-    beds = st.slider(
-        'Beds', 
-        min_value = min_beds,
-        max_value = max_beds,
-        value=[min_beds, max_beds]
-        )
-    
-    
-    baths = st.slider(
-        'Baths', 
-        min_value = min_baths,
-        max_value = max_baths,
-        value=[min_baths, max_baths]
-        )
-    
-    # property type
-    property_type = st.multiselect(
-        'Property type',
-        p_type 
-        )
+    with st.expander("Advanced filters"):
+        # city
+        c_con = st.container()
+        c_all = st.checkbox("Select all", value=True)
+        if c_all:
+            city = c_con.multiselect(
+            'City', 
+            cities,
+            cities
+            )
+        else:
+            city = c_con.multiselect(
+                'City', 
+                cities
+                )
+        
+        # neighborhood
+        n_con = st.container()
+        n_all = st.checkbox("Select all", value=True, key=1)
+        if n_all:
+            neighborhood = n_con.multiselect(
+                'Neighborhood', 
+                hoods,
+                hoods
+                )
+        else:
+            neighborhood = n_con.multiselect(
+                'Neighborhood', 
+                hoods)
+        
+        # sq ft
+        sqft = st.slider(
+            'Sq. Feet', 
+            min_value = min_sf,
+            max_value = max_sf,
+            value=[min_sf, max_sf]
+            )
+        
+        # bed/bath
+        beds = st.slider(
+            'Beds', 
+            min_value = min_beds,
+            max_value = max_beds,
+            value=[min_beds, max_beds]
+            )
+        
+        
+        baths = st.slider(
+            'Baths', 
+            min_value = min_baths,
+            max_value = max_baths,
+            value=[min_baths, max_baths]
+            )
+        
+        # property type
+        p_con = st.container()
+        p_all = st.checkbox("Select all", value=True, key=2)
+        if p_all:
+            property_type = p_con.multiselect(
+                'Property type',
+                p_type,
+                p_type 
+                )
+        else:
+            property_type = p_con.multiselect(
+                'Property type',
+                p_type 
+                )
 
-
+# filter based on inputs - needs refactoring
+df = data.loc[(data["ASKING PRICE"] > p_range[0]) & (data["ASKING PRICE"] < p_range[1])]
+df = df.loc[(df["SOLD DATE"].dt.date > d_range[0]) & (df["SOLD DATE"].dt.date < d_range[1])]
+df = df[df["CITY"].isin(city)]
+df = df[df["LOCATION"].isin(neighborhood)]
+df = df.loc[(df["SQUARE FEET"] > sqft[0]) & (df["SQUARE FEET"] < sqft[1])]
+df = df.loc[(df["BEDS"] > beds[0]) & (df["BEDS"] < beds[1])]
+df = df.loc[(df["BATHS"] > baths[0]) & (df["BATHS"] < baths[1])]
+df = df[df["PROPERTY TYPE"].isin(property_type)]
 
 # display summary stats
-st.metric("Average amount over asking price", '${:.0f}'.format(m_over(data)))
-st.metric("Percent of properties over asking price", "{:.2f}%".format(p_over(data)))
-st.metric("Percent of properties under asking price", "{:.2f}%".format(p_under(data)))
+st.metric("Average amount over asking price", '${:,.0f}'.format(m_over(df)))
+st.metric("Percent of properties over asking price", "{:.2f}%".format(p_over(df)))
+st.metric("Percent of properties under asking price", "{:.2f}%".format(p_under(df)))
 
-# view = pdk.data_utils.compute_view(final[["LONGITUDE", "LATITUDE"]])
+# Format data for map vizualization
+map_data = df[["LATITUDE", "LONGITUDE", "DIFF", "ASKING PRICE", "SALE PRICE", "SOLD DATE"]]
+map_data = map_data.rename(columns={"ASKING PRICE": "ASKING_PRICE", "SALE PRICE": "SALE_PRICE", "SOLD DATE": "SOLD_DATE"})
+map_data["F_DIFF"] = map_data["DIFF"].apply(lambda d: f"{d:,}")
+map_data["F_ASKING_PRICE"] = map_data["ASKING_PRICE"].apply(lambda d: f"{d:,}")
+map_data["F_SALE_PRICE"] = map_data["SALE_PRICE"].apply(lambda d: f"{d:,}")
 
+# Allow users to choose what value to render on the map
 option = st.selectbox(
      'Select a field to display on the map',
      ('Asking Price', 'Sale Price', 'Price difference (over/under asking)'),
@@ -209,7 +239,7 @@ elevation = map_display_lookup[option]
 
 col_layer = pdk.Layer(
         "ColumnLayer",
-        data,
+        map_data,
         get_position=["LONGITUDE", "LATITUDE"],
         get_elevation=[elevation],
         elevation_scale=.01,
@@ -239,5 +269,3 @@ st.pydeck_chart(pdk.Deck(
     map_provider = "mapbox",
     map_style = 'mapbox://styles/mapbox/light-v9',
 ))
-
-data
