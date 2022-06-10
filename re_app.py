@@ -5,6 +5,7 @@ import glob
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pydeck as pdk
+from datetime import datetime
 
 # DATA IMPORT
 
@@ -50,6 +51,9 @@ def load_final():
     reduced['UPDATED'] = reduced['UPDATED'].str.slice(start=8, stop=18)
     reduced['UPDATED'] = pd.to_datetime(reduced['UPDATED'])
 
+    # Update the datatype for sold listings
+    sold["SOLD DATE"] = pd.to_datetime(sold["SOLD DATE"])
+
     # Combine for sale and reduced listings so we can get the latest asking price for comparison
     for_sale = pd.concat([for_sale, reduced])
     for_sale = for_sale.drop(['SOLD DATE'], axis=1)
@@ -81,32 +85,107 @@ def p_under(df):
     p = (df["DIFF"].loc[df['DIFF'] < 0].count() / df["DIFF"].count())*100
     return p
 
-
 data = load_final()
 
 # Format data for map vizualization
-map_data = data[["LATITUDE", "LONGITUDE", "DIFF", "ASKING PRICE", "SALE PRICE"]]
-map_data = map_data.rename(columns={"ASKING PRICE": "ASKING_PRICE", "SALE PRICE": "SALE_PRICE"})
-# map_data["F_DIFF"] = show_thous(map_data["DIFF"])
-map_data["F_DIFF"] = map_data["DIFF"].apply(lambda d: f"{d:,}")
-map_data["F_ASKING_PRICE"] = map_data["ASKING_PRICE"].apply(lambda d: f"{d:,}")
-map_data["F_SALE_PRICE"] = map_data["SALE_PRICE"].apply(lambda d: f"{d:,}")
+# map_data = data[["LATITUDE", "LONGITUDE", "DIFF", "ASKING PRICE", "SALE PRICE", "SOLD DATE"]]
+# map_data = map_data.rename(columns={"ASKING PRICE": "ASKING_PRICE", "SALE PRICE": "SALE_PRICE", "SOLD DATE": "SOLD_DATE"})
+# # map_data["F_DIFF"] = show_thous(map_data["DIFF"])
+# map_data["F_DIFF"] = map_data["DIFF"].apply(lambda d: f"{d:,}")
+# map_data["F_ASKING_PRICE"] = map_data["ASKING_PRICE"].apply(lambda d: f"{d:,}")
+# map_data["F_SALE_PRICE"] = map_data["SALE_PRICE"].apply(lambda d: f"{d:,}")
+
+data = data.rename(columns={"ASKING PRICE": "ASKING_PRICE", "SALE PRICE": "SALE_PRICE", "SOLD DATE": "SOLD_DATE"})
+data["F_DIFF"] = data["DIFF"].apply(lambda d: f"{d:,}")
+data["F_ASKING_PRICE"] = data["ASKING_PRICE"].apply(lambda d: f"{d:,}")
+data["F_SALE_PRICE"] = data["SALE_PRICE"].apply(lambda d: f"{d:,}")
+
+# Calculate variables to populate filter inputs
+min_asking = int(data["ASKING_PRICE"].min())
+max_asking = int(data["ASKING_PRICE"].max())
+
+min_date = datetime.date(data["SOLD_DATE"].min())
+max_date = datetime.date(data["SOLD_DATE"].max())
+
+cities = data["CITY"].drop_duplicates(keep='first')
+
+hoods = data["LOCATION"].drop_duplicates(keep='first')
+
+min_sf = int(data["SQUARE FEET"].min())
+max_sf = int(data["SQUARE FEET"].max())
+
+min_beds = int(data["BEDS"].min())
+max_beds = int(data["BEDS"].max())
+
+min_baths = float(data["BATHS"].min())
+max_baths = float(data["BATHS"].max())
+
+p_type = data["PROPERTY TYPE"].drop_duplicates(keep='first')
 
 # APP
-# filters
-# price range
-p_range = st.slider('Select a price range', value=[300000, 1000000])
-# city
-city = st.multiselect('City', ['Option 1', 'Option 2'])
-# neighborhood
-neighborhood = st.multiselect('Neighborhood', ['Option 1', 'Option 2'])
-# sq ft
-sqft = st.slider('Sq. Feet', value=[500, 4000])
-# bed/bath
-beds = st.slider('Beds', value=[1, 5])
-baths = st.slider('Baths', value=[1, 5])
-# property type
-property_type = st.multiselect('Property type', ['Option 1', 'Option 2'])
+# filters in sidebar
+with st.sidebar:
+    st.write(min_date)
+    
+    # price range
+    p_range = st.slider(
+        'Select an asking price range', 
+        min_value = 0, 
+        max_value = max_asking, 
+        value=[min_asking, max_asking]
+        )
+    
+    # sold date
+    d_range = st.slider(
+        'Select a date range', 
+        min_value = min_date, 
+        max_value = max_date, 
+        value=[min_date, max_date], 
+        format="MM/DD/YY"
+        )
+    
+    # city
+    city = st.multiselect(
+        'City', 
+        cities)
+    
+    # neighborhood
+    neighborhood = st.multiselect(
+        'Neighborhood', 
+        hoods)
+    
+    # sq ft
+    sqft = st.slider(
+        'Sq. Feet', 
+        min_value = min_sf,
+        max_value = max_sf,
+        value=[min_sf, max_sf]
+        )
+    
+    # bed/bath
+    beds = st.slider(
+        'Beds', 
+        min_value = min_beds,
+        max_value = max_beds,
+        value=[min_beds, max_beds]
+        )
+    
+    
+    baths = st.slider(
+        'Baths', 
+        min_value = min_baths,
+        max_value = max_baths,
+        value=[min_baths, max_baths]
+        )
+    
+    # property type
+    property_type = st.multiselect(
+        'Property type',
+        p_type 
+        )
+
+
+
 # display summary stats
 st.metric("Average amount over asking price", '${:.0f}'.format(m_over(data)))
 st.metric("Percent of properties over asking price", "{:.2f}%".format(p_over(data)))
@@ -130,7 +209,7 @@ elevation = map_display_lookup[option]
 
 col_layer = pdk.Layer(
         "ColumnLayer",
-        map_data,
+        data,
         get_position=["LONGITUDE", "LATITUDE"],
         get_elevation=[elevation],
         elevation_scale=.01,
