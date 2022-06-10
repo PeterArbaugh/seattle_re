@@ -112,8 +112,6 @@ p_type = data["PROPERTY TYPE"].drop_duplicates(keep='first')
 # APP
 # filters in sidebar
 with st.sidebar:
-    st.write(min_date)
-    
     # price range
     p_range = st.slider(
         'Select an asking price range', 
