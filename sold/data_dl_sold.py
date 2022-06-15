@@ -6,7 +6,7 @@ ua = UserAgent()
 header = {'User-Agent':str(ua.random)}
 
 
-download_url = 'https://www.redfin.com/stingray/api/gis-csv?al=1&include_pending_homes=true&isRentals=false&market=seattle&max_price=1000000&num_homes=350&ord=redfin-recommended-asc&page_number=1&region_id=16163,17887&region_type=6,6&sold_within_days=7&status=1&travel_with_traffic=false&travel_within_region=false&uipt=1,2,3,4,5,6,7,8&v=8'
+download_url = 'https://www.redfin.com/stingray/api/gis-csv?al=1&include_pending_homes=true&isRentals=false&market=seattle&max_price=1500000&num_homes=350&ord=redfin-recommended-asc&page_number=1&region_id=16163,17887&region_type=6,6&sold_within_days=7&status=1&travel_with_traffic=false&travel_within_region=false&uipt=1,2,3,4,5,6,7,8&v=8'
 
 def download_file(url, header, filename=''):
     try:
