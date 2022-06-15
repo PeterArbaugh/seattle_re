@@ -7,6 +7,9 @@ import seaborn as sns
 import pydeck as pdk
 from datetime import datetime
 
+# Set page config
+st.set_page_config(layout="wide", page_title="Seattle/Tacoma Real Estate", page_icon=":house:")
+
 # DATA IMPORT
 
 # utility to drop columns across all data from this source
@@ -72,7 +75,7 @@ def load_final():
 # SUMMARY STATS
 # calculate mean amount over asking price
 def m_over(df):
-    m = df["DIFF"].loc[df['DIFF'] > 0].mean()
+    m = df["DIFF"].loc[df['DIFF'] > 0].median()
     return m
 
 # calculate % of properties that went over asking price
@@ -110,11 +113,19 @@ max_baths = float(data["BATHS"].max())
 p_type = data["PROPERTY TYPE"].drop_duplicates(keep='first')
 
 # APP
-# filters in sidebar
-with st.sidebar:
+st.title("Asking Price and Final Price")
+
+
+# Layout
+row1_1, row1_2 = st.columns((2, 3))
+
+with row1_1:
+    st.write("Comparing the asking price with what the buyer actually paid for residential real estate in Seattle and Tacoma.")
+
+with row1_2:
     # price range
     p_range = st.slider(
-        'Select an asking price range', 
+        'Asking price', 
         min_value = 0, 
         max_value = max_asking, 
         value=[min_asking, max_asking]
@@ -122,14 +133,23 @@ with st.sidebar:
     
     # sold date
     d_range = st.slider(
-        'Select a date range', 
+        'Sold date', 
         min_value = min_date, 
         max_value = max_date, 
         value=[min_date, max_date], 
         format="MM/DD/YY"
         )
+
+with st.expander("Advanced filters"):
+    rowx_1, rowx_2 = st.columns((2,2))
+    with rowx_1:
+        # Allow users to choose what value to render on the map
+        option = st.selectbox(
+            'Select a field to display on the map',
+            ('Asking Price', 'Sale Price', 'Price difference (over/under asking)'),
+            index=2
+            )
     
-    with st.expander("Advanced filters"):
         # city
         c_con = st.container()
         c_all = st.checkbox("Select all", value=True)
@@ -144,45 +164,7 @@ with st.sidebar:
                 'City', 
                 cities
                 )
-        
-        # neighborhood
-        n_con = st.container()
-        n_all = st.checkbox("Select all", value=True, key=1)
-        if n_all:
-            neighborhood = n_con.multiselect(
-                'Neighborhood', 
-                hoods,
-                hoods
-                )
-        else:
-            neighborhood = n_con.multiselect(
-                'Neighborhood', 
-                hoods)
-        
-        # sq ft
-        sqft = st.slider(
-            'Sq. Feet', 
-            min_value = min_sf,
-            max_value = max_sf,
-            value=[min_sf, max_sf]
-            )
-        
-        # bed/bath
-        beds = st.slider(
-            'Beds', 
-            min_value = min_beds,
-            max_value = max_beds,
-            value=[min_beds, max_beds]
-            )
-        
-        
-        baths = st.slider(
-            'Baths', 
-            min_value = min_baths,
-            max_value = max_baths,
-            value=[min_baths, max_baths]
-            )
-        
+
         # property type
         p_con = st.container()
         p_all = st.checkbox("Select all", value=True, key=2)
@@ -198,6 +180,49 @@ with st.sidebar:
                 p_type 
                 )
 
+
+    
+    with rowx_2:
+
+        # bed/bath
+        beds = st.slider(
+            'Beds', 
+            min_value = min_beds,
+            max_value = max_beds,
+            value=[min_beds, max_beds]
+            )
+    
+    
+        baths = st.slider(
+            'Baths', 
+            min_value = min_baths,
+            max_value = max_baths,
+            value=[min_baths, max_baths]
+            )
+        
+        # sq ft
+        sqft = st.slider(
+            'Sq. Feet', 
+            min_value = min_sf,
+            max_value = max_sf,
+            value=[min_sf, max_sf]
+            ) 
+
+    
+    # neighborhood
+    n_con = st.container()
+    n_all = st.checkbox("Select all", value=True, key=1)
+    if n_all:
+        neighborhood = n_con.multiselect(
+            'Neighborhood', 
+            hoods,
+            hoods
+            )
+    else:
+        neighborhood = n_con.multiselect(
+            'Neighborhood', 
+            hoods)
+
 # filter based on inputs - needs refactoring
 df = data.loc[(data["ASKING PRICE"] > p_range[0]) & (data["ASKING PRICE"] < p_range[1])]
 df = df.loc[(df["SOLD DATE"].dt.date > d_range[0]) & (df["SOLD DATE"].dt.date < d_range[1])]
@@ -209,9 +234,20 @@ df = df.loc[(df["BATHS"] > baths[0]) & (df["BATHS"] < baths[1])]
 df = df[df["PROPERTY TYPE"].isin(property_type)]
 
 # display summary stats
-st.metric("Average amount over asking price", '${:,.0f}'.format(m_over(df)))
-st.metric("Percent of properties over asking price", "{:.2f}%".format(p_over(df)))
-st.metric("Percent of properties under asking price", "{:.2f}%".format(p_under(df)))
+row2_1, row2_2, row2_3 = st.columns((2,2,2))
+
+with row2_1:
+    st.metric("Median amount over asking price", '${:,.0f}'.format(m_over(df)))
+    st.write("Median of difference between asking price and sale price for properties that sold for greater than their asking price.")
+
+with row2_2:
+    st.metric("Percent of properties over asking price", "{:.2f}%".format(p_over(df)))
+    st.write("Percentage of properties where the sale price was larger than the asking price.")
+
+with row2_3:
+    st.metric("Percent of properties under asking price", "{:.2f}%".format(p_under(df)))
+    st.write("Percentage of properties where the sale price was less than the asking price.")
+
 
 # Format data for map vizualization
 map_data = df[["LATITUDE", "LONGITUDE", "DIFF", "ASKING PRICE", "SALE PRICE", "SOLD DATE"]]
@@ -219,13 +255,6 @@ map_data = map_data.rename(columns={"ASKING PRICE": "ASKING_PRICE", "SALE PRICE"
 map_data["F_DIFF"] = map_data["DIFF"].apply(lambda d: f"{d:,}")
 map_data["F_ASKING_PRICE"] = map_data["ASKING_PRICE"].apply(lambda d: f"{d:,}")
 map_data["F_SALE_PRICE"] = map_data["SALE_PRICE"].apply(lambda d: f"{d:,}")
-
-# Allow users to choose what value to render on the map
-option = st.selectbox(
-     'Select a field to display on the map',
-     ('Asking Price', 'Sale Price', 'Price difference (over/under asking)'),
-     index=2
-     )
 
 map_display_lookup = {
     "Asking Price": "ASKING_PRICE",
@@ -254,16 +283,39 @@ tooltip = {
     "style": {"background": "black", "color": "white", "font-family": '"Source Sans Pro", sans-serif', "z-index": "10000"},
 }
 
-st.pydeck_chart(pdk.Deck(
-    col_layer,
-    tooltip=tooltip,
-    # initial_view_state = view,
-    initial_view_state = {
-                "latitude": 47.6161,
-                "longitude": -122.3964,
-                "zoom": 10,
-                "pitch": 40,
-    },
-    map_provider = "mapbox",
-    map_style = 'mapbox://styles/mapbox/light-v9',
-))
+row3_1, row3_2 = st.columns((2,2))
+with row3_1:
+    st.subheader("Seattle")
+    st.pydeck_chart(pdk.Deck(
+        col_layer,
+        tooltip=tooltip,
+        # initial_view_state = view,
+        initial_view_state = {
+                    "latitude": 47.6161,
+                    "longitude": -122.3964,
+                    "zoom": 10,
+                    "pitch": 40,
+        },
+        map_provider = "mapbox",
+        map_style = 'mapbox://styles/mapbox/light-v9',
+    ))
+
+with row3_2:
+    st.subheader("Tacoma")
+    st.pydeck_chart(pdk.Deck(
+        col_layer,
+        tooltip=tooltip,
+        # initial_view_state = view,
+        initial_view_state = {
+                    "latitude": 47.2639497,
+                    "longitude": -122.4458089,
+                    "zoom": 10,
+                    "pitch": 40,
+        },
+        map_provider = "mapbox",
+        map_style = 'mapbox://styles/mapbox/light-v9',
+    ))
+
+with st.expander("Raw data"):
+    st.write("Filters applied above are also applied to this data.")
+    df
