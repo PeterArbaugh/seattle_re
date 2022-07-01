@@ -113,7 +113,7 @@ max_baths = float(data["BATHS"].max())
 p_type = data["PROPERTY TYPE"].drop_duplicates(keep='first')
 
 # APP
-st.title("Asking Price and Final Price")
+st.title("Asking Price and Final Price in Seattle & Tacoma")
 
 
 # Layout
@@ -125,10 +125,11 @@ with row1_1:
 with row1_2:
     # price range
     p_range = st.slider(
-        'Asking price', 
+        'Asking price ($)', 
         min_value = 0, 
         max_value = max_asking, 
-        value=[min_asking, max_asking]
+        value=[min_asking, max_asking],
+        step=25000,
         )
     
     # sold date
@@ -291,8 +292,8 @@ with row3_1:
         tooltip=tooltip,
         # initial_view_state = view,
         initial_view_state = {
-                    "latitude": 47.6161,
-                    "longitude": -122.3964,
+                    "latitude": 47.602970,
+                    "longitude": -122.310777,
                     "zoom": 10,
                     "pitch": 40,
         },
@@ -307,9 +308,9 @@ with row3_2:
         tooltip=tooltip,
         # initial_view_state = view,
         initial_view_state = {
-                    "latitude": 47.2639497,
-                    "longitude": -122.4458089,
-                    "zoom": 10,
+                    "latitude": 47.231572,
+                    "longitude": -122.461387,
+                    "zoom": 11,
                     "pitch": 40,
         },
         map_provider = "mapbox",
