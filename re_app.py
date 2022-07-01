@@ -121,31 +121,7 @@ p_type = data["PROPERTY TYPE"].drop_duplicates(keep='first')
 # APP
 st.title("Asking Price and Final Price in Seattle & Tacoma")
 
-
 # Layout
-row1_1, row1_2 = st.columns((1, 1))
-
-with row1_1:
-    st.write("Comparing the asking price with what the buyer actually paid for residential real estate in Seattle and Tacoma.")
-
-with row1_2:
-    # price range
-    p_range = st.slider(
-        'Asking price ($)', 
-        min_value = 0, 
-        max_value = max_asking, 
-        value=[min_asking, max_asking],
-        step=25000,
-        )
-    
-    # sold date
-    d_range = st.slider(
-        'Sold date', 
-        min_value = min_date, 
-        max_value = max_date, 
-        value=[min_date, max_date], 
-        format="MM/DD/YY"
-        )
 
 with st.expander("Advanced filters"):
     rowx_1, rowx_2 = st.columns((2,2))
@@ -156,7 +132,6 @@ with st.expander("Advanced filters"):
             ('Asking Price', 'Sale Price', 'Price difference (over/under asking)'),
             index=2
             )
-    
         # city
         c_con = st.container()
         c_all = st.checkbox("Select all", value=True)
@@ -186,7 +161,6 @@ with st.expander("Advanced filters"):
                 'Property type',
                 p_type 
                 )
-
 
     
     with rowx_2:
@@ -229,6 +203,32 @@ with st.expander("Advanced filters"):
         neighborhood = n_con.multiselect(
             'Neighborhood', 
             hoods)
+
+row1_1, row1_2 = st.columns((1, 1))
+
+with row1_1:
+    st.write("Comparing the asking price with what the buyer actually paid for residential real estate in Seattle and Tacoma.")
+    st.write("It's hard to tell what someone can actually afford in this market. On the internet and in the media, there is simultaneously talk that everything in the PNW is sold for $100k over asking price and that the market is about to correct. To try to visualize a small piece of the current state of the market, I’ve been collecting data to answer the question “What is the likelihood that a buyer will need to pay over asking price for residential real estate in Seattle or Tacoma?”")
+
+
+with row1_2:
+    # price range
+    p_range =st.slider(
+        'Asking price ($)', 
+        min_value = 0, 
+        max_value = max_asking, 
+        value=[min_asking, max_asking],
+        step=25000,
+        )
+    
+    # sold date
+    d_range = st.slider(
+        'Sold date', 
+        min_value = min_date, 
+        max_value = max_date, 
+        value=[min_date, max_date], 
+        format="MM/DD/YY"
+        )    
 
 # filter based on inputs - needs refactoring
 df = data.loc[(data["ASKING PRICE"] > p_range[0]) & (data["ASKING PRICE"] < p_range[1])]
