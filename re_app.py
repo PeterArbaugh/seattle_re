@@ -72,6 +72,11 @@ def load_final():
 
     return final
 
+# Pull data to create a histogram showing median price difference change by week
+# def load_bar_chart_data(df):
+#     df = df[["SOLD DATE", "DIFF"]].groupby([pd.Grouper(key="SOLD DATE", freq="W-MON")])["DIFF"].median().reset_index().sort_values("SOLD DATE")
+#     return df
+
 # SUMMARY STATS
 # calculate mean amount over asking price
 def m_over(df):
@@ -89,6 +94,7 @@ def p_under(df):
     return p
 
 data = load_final()
+# b_data = load_bar_chart_data(data)
 
 # Calculate variables to populate filter inputs
 min_asking = int(data["ASKING PRICE"].min())
@@ -117,7 +123,7 @@ st.title("Asking Price and Final Price in Seattle & Tacoma")
 
 
 # Layout
-row1_1, row1_2 = st.columns((2, 3))
+row1_1, row1_2 = st.columns((1, 1))
 
 with row1_1:
     st.write("Comparing the asking price with what the buyer actually paid for residential real estate in Seattle and Tacoma.")
