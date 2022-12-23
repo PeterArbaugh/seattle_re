@@ -23,13 +23,14 @@ decorator==5.1.1
 defusedxml==0.7.1
 entrypoints==0.4
 executing==0.8.3
-fake-useragent==0.1.11
+fake-useragent==1.1.1
 fastjsonschema==2.15.3
 fonttools==4.33.3
 gitdb==4.0.9
 GitPython==3.1.27
 idna==3.3
 importlib-metadata==4.11.3
+importlib-resources==5.10.1
 ipykernel==6.13.0
 ipython==8.3.0
 ipython-genutils==0.2.0
