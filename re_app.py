@@ -56,6 +56,7 @@ def load_final():
 
     # Update the datatype for sold listings
     sold["SOLD DATE"] = pd.to_datetime(sold["SOLD DATE"])
+    sold = sold[sold["SOLD DATE"] > "04/28/2022"]
 
     # Combine for sale and reduced listings so we can get the latest asking price for comparison
     for_sale = pd.concat([for_sale, reduced])
@@ -217,7 +218,7 @@ with row1_2:
         'Asking price ($)', 
         min_value = 0, 
         max_value = max_asking, 
-        value=[min_asking, max_asking],
+        value=[150000, max_asking],
         step=25000,
         )
     
